@@ -1,0 +1,14 @@
+# Magento 2 specific
+/vendor/
+/generated/
+/pub/static/
+/pub/media/
+/var/
+/app/etc/env.php
+/app/etc/config.php
+
+# Other common ignores
+*.log
+*.idea/
+.DS_Store
+
