@@ -1,0 +1,70 @@
+services:
+  db:
+    image: mysql:8.0
+    platform: linux/amd64
+    container_name: magento_db
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD} 
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - magento_net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  elasticsearch:
+    image: elasticsearch:8.11.1
+    platform: linux/amd64
+    container_name: magento_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms3g -Xmx3g"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - magento_net
+    healthcheck:
+      test: ["CMD", "curl", "-s", "-f", "http://localhost:9200/_cluster/health"]
+      interval: 10s
+
+  web:
+    build:
+      context: .
+      args:
+        - MAGENTO_PUBLIC_KEY=${MAGENTO_PUBLIC_KEY}
+        - MAGENTO_PRIVATE_KEY=${MAGENTO_PRIVATE_KEY}
+    platform: linux/amd64
+    container_name: magento_web
+    ports:
+      - "80:80"
+    # volumes:
+    #   - .:/var/www/html
+    environment:
+      - MYSQL_HOST=db
+      - ELASTICSEARCH_HOST=elasticsearch
+    depends_on:
+      db:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - magento_net
+
+volumes:
+  db_data:
+  es_data:
+
+networks:
+  magento_net:
+    driver: bridge
