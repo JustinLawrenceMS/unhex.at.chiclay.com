@@ -8,6 +8,7 @@
 /app/etc/config.php
 
 # Other common ignores
+.env*
 *.log
 *.idea/
 .DS_Store
